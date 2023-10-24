@@ -22,10 +22,11 @@ class Apriori:
         for transaction_id in self.data:
             for item in self.data[transaction_id]:
                 item_tuple = (item,)
-                if item in items_freq:
-                    items_freq[item_tuple] += 1
+                if frozenset(item_tuple) in items_freq:
+
+                    items_freq[frozenset(item_tuple)] += 1
                 else:
-                    items_freq[item_tuple] = 1
+                    items_freq[frozenset(item_tuple)] = 1
 
         # Based on the minimum support value, we filter the candidate set
         return {item: freq for item, freq in items_freq.items() if freq/len(self.data) >= self.min_support}
@@ -33,11 +34,10 @@ class Apriori:
   
 
     # Generate candidate sets which is the pairs/groups of item based on previous candidates set
-    
     def generate_candidate_sets(self, previous_candidates, count):
         candidate_sets = []
-
         candidate_sets_freq = {}
+
         # Form the candidate sets
         for candidate1 in previous_candidates:
             #print("Candidate 1: ", set(candidate1))
@@ -75,7 +75,7 @@ class Apriori:
                 candidates.append(items_freq) 
             else:
                  # Generate the bext candidate itemsets based on candidates set
-                 print("Previous itemsets: ", candidates[-1])
+                 # print("Previous itemsets: ", candidates[-1])
                  candidate_itemsets = self.generate_candidate_sets(candidates[-1], count)
                  if not candidate_itemsets:
                      print("No more frequent itemsets are further found")
@@ -95,12 +95,26 @@ class Apriori:
         return itemsets_freq
     
     # Generating strong association rules
-    # Measure of how likely is Item Y purchased when Item X is purchased
-    # def calculate_confidence(self, items_freq, item_pairs_freq):
+    # Measure of how likely is Itemset Y purchased when Itemset X is purchased
+    def calculate_confidence(self,  item_set_freq):
+        # Flatten the item_set_freq
+        flattened_item_set_freq = {}
 
-    #     confidences = {}
-    #     for item_pairing in item_pairs_freq:
-    #         for item in item_pairing:
-    #             association_rules = (item, set(item_pairing) - set([item]))
-    #             if(item not in item_pairs_freq)
-    #             confidences[association_rules] = item_pairs_freq[association_rules] / item_pairs_freq[association_rules])]
+        # Loop through each key in your dictionary
+        for key in item_set_freq:
+            # Loop through each value in the sub-dictionary
+            for subkey in item_set_freq[key]:
+                # Add the value as a key to your new dictionary
+                flattened_item_set_freq [subkey] = item_set_freq[key][subkey]
+
+        print(f"Flattend Dictionary: {flattened_item_set_freq}")
+        confidences = {}
+
+        for itemset in flattened_item_set_freq:
+            if(len(itemset)==1):
+                continue
+            for item in itemset:
+                association_rules = (frozenset([item]), itemset.difference([item]))
+                confidences[association_rules] = flattened_item_set_freq[itemset] / flattened_item_set_freq[frozenset([item])]
+
+        return {rules: confidence for rules, confidence in confidences.items() if confidence >= self.min_confidence}
