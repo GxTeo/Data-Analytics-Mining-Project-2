@@ -13,9 +13,10 @@ class Apriori:
 
         Transaction ID : Items
         
+        where data is a dictionary. Key is transction id and items is a list
         """
         for transaction_id in self.data:
-            for item in transaction_id:
+            for item in self.data[transaction_id]:
                 if item in items_freq:
                     items_freq[item] += 1
                 else:
@@ -40,7 +41,7 @@ class Apriori:
         for transaction_id in self.data:
             for item_pairing  in item_pairs:
                 # check if item pair is a subset of transaction set
-                if(set(item_pairing).issubset(transaction_id)):
+                if(set(item_pairing).issubset(self.data[transaction_id])):
                     item_pairs[item_pairing] +=1
         # Based on the minimum support value, we filter the candidate set
         return {item_pairing: freq for item_pairing, freq in item_pairs.items() if freq/len(self.data) >= self.min_support}
