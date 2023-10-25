@@ -22,12 +22,8 @@ class Apriori:
         """
         for transaction_id in self.data:
             for item in self.data[transaction_id]:
-                item_tuple = (item,)
-                if frozenset(item_tuple) in items_freq:
-                    items_freq[frozenset(item_tuple)] += 1
-                else:
-                    items_freq[frozenset(item_tuple)] = 1
-
+                item_tuple = frozenset(item,)
+                items_freq[item_tuple] = items_freq.get(item_tuple, 0) + 1
         # Based on the minimum support value, we filter the candidate set
         return {item: freq for item, freq in items_freq.items() if freq/len(self.data) >= self.min_support}
 
@@ -73,8 +69,7 @@ class Apriori:
                 items_set_freq[count] = items_freq
                 candidates.append(items_freq) 
             else:
-                 # Generate the bext candidate itemsets based on candidates set
-                 # print("Previous itemsets: ", candidates[-1])
+                 # Generate the next candidate itemsets based on previous candidate set
                  candidate_itemsets = self.generate_candidate_sets(candidates[-1], count)
                  if not candidate_itemsets:
                      print("No more frequent itemsets are further found")
@@ -85,12 +80,10 @@ class Apriori:
         
         return items_set_freq
 
-    # Generate itemsets based on pre-defined min_support
+    # Run the algorithm
     def run_apriori(self):
-
         items_freq = self.item_frequency()
         itemsets_freq = self.generate_itemsets(items_freq)
-
         return itemsets_freq
     
     # Generating strong association rules
