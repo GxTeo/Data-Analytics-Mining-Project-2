@@ -1,9 +1,10 @@
 from itertools import combinations
+from tqdm import tqdm
 
 class Apriori:
     def __init__(self, data, min_support, min_confidence):
         self.data = data
-        # Support is the the ratio (or fraction) of the number of transactions that contain an itemset.
+        # Support is the the ratio of the number of transactions that contain an itemset.
         self.min_support = min_support
         self.min_confidence = min_confidence
 
@@ -17,13 +18,12 @@ class Apriori:
 
         Transaction ID : Items
         
-        where data is a dictionary. Key is transction id and items is a list
+        where data is a dictionary. Key is transaction id and items is a list
         """
         for transaction_id in self.data:
             for item in self.data[transaction_id]:
                 item_tuple = (item,)
                 if frozenset(item_tuple) in items_freq:
-
                     items_freq[frozenset(item_tuple)] += 1
                 else:
                     items_freq[frozenset(item_tuple)] = 1
@@ -43,19 +43,18 @@ class Apriori:
             #print("Candidate 1: ", set(candidate1))
             for candidate2 in previous_candidates:
                 if candidate1 != candidate2:
-                    if len(frozenset(candidate1).union(frozenset(candidate2)))==count and frozenset(candidate1).union(frozenset(candidate2)) not in candidate_sets:
+                    union_set = frozenset(candidate1).union(frozenset(candidate2))
+                    if len(union_set) == count and union_set not in candidate_sets:
                         # Have to use frozenset so that it can be a dictionary key
-                        candidate_sets.append(frozenset(candidate1).union(frozenset(candidate2)))
+                        candidate_sets.append(union_set)
 
         # Now we prune it based on dataset and min_support
-        for itemset in candidate_sets:
+        for itemset in tqdm(candidate_sets):
             #print(f"Item Set: {itemset}")
             for transaction_id in self.data:
-                if itemset.issubset(self.data[transaction_id]):
-                    if itemset not in candidate_sets_freq:
-                        candidate_sets_freq[itemset] = 1
-                    else:
-                        candidate_sets_freq[itemset] +=1
+                transaction_set = set(self.data[transaction_id])
+                if itemset <= transaction_set:  
+                    candidate_sets_freq[itemset] = candidate_sets_freq.get(itemset, 0) + 1
 
         return  {item: freq for item, freq in candidate_sets_freq.items() if freq/len(self.data) >= self.min_support}
 
@@ -97,17 +96,14 @@ class Apriori:
     # Generating strong association rules
     # Measure of how likely is Itemset Y purchased when Itemset X is purchased
     def calculate_confidence(self,  item_set_freq):
-        # Flatten the item_set_freq
-        flattened_item_set_freq = {}
 
-        # Loop through each key in your dictionary
+        # Flatten the item_set_freq dictionary
+        flattened_item_set_freq = {}
         for key in item_set_freq:
-            # Loop through each value in the sub-dictionary
             for subkey in item_set_freq[key]:
-                # Add the value as a key to your new dictionary
                 flattened_item_set_freq [subkey] = item_set_freq[key][subkey]
 
-        print(f"Flattend Dictionary: {flattened_item_set_freq}")
+        # print(f"Flattened Dictionary: {flattened_item_set_freq}")
         confidences = {}
 
         for itemset in flattened_item_set_freq:
