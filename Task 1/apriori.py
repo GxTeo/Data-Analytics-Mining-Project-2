@@ -22,7 +22,7 @@ class Apriori:
         """
         for transaction_id in self.data:
             for item in self.data[transaction_id]:
-                item_tuple = frozenset(item,)
+                item_tuple = frozenset((item,))
                 items_freq[item_tuple] = items_freq.get(item_tuple, 0) + 1
         # Based on the minimum support value, we filter the candidate set
         return {item: freq for item, freq in items_freq.items() if freq/len(self.data) >= self.min_support}
