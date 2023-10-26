@@ -12,7 +12,6 @@ class Apriori:
     def item_frequency(self):
         # Dictionary to store Item: Frequency 
         items_freq = {}
-
         """
         Assumptions on dataset is such that
 
@@ -22,68 +21,88 @@ class Apriori:
         """
         for transaction_id in self.data:
             for item in self.data[transaction_id]:
-                item_tuple = frozenset((item,))
+                item_tuple = (item,)
                 items_freq[item_tuple] = items_freq.get(item_tuple, 0) + 1
         # Based on the minimum support value, we filter the candidate set
         return {item: freq for item, freq in items_freq.items() if freq/len(self.data) >= self.min_support}
+    
+    
+    def apriori_property(self, previous_candidates, subsets):
+        """
+        Apriori property states that all non-empty subsets of a frequent itemsets must also be frequent.
+        Implemented this to reduce computational expenses instead of brute force
+        """
+        for subset in subsets:
+            if subset not in previous_candidates:
+                return False
+        return True
 
-  
+    # Reduce transaction that has less than n items for nth level
+    def reduce_transactions(self, transactions, count):
+        return {transaction_id: transaction for transaction_id, transaction in transactions.items() if len(transaction) >= count}
 
     # Generate candidate sets which is the pairs/groups of item based on previous candidates set
     def generate_candidate_sets(self, previous_candidates, count):
-        candidate_sets = []
+        candidate_final_sets = []
         candidate_sets_freq = {}
 
         # Form the candidate sets
-        for candidate1 in previous_candidates:
-            #print("Candidate 1: ", set(candidate1))
-            for candidate2 in previous_candidates:
-                if candidate1 != candidate2:
-                    union_set = frozenset(candidate1).union(frozenset(candidate2))
-                    if len(union_set) == count and union_set not in candidate_sets:
-                        # Have to use frozenset so that it can be a dictionary key
-                        candidate_sets.append(union_set)
+        # print(f"Previous Candidate at level {count-1}: ", previous_candidates)
+        candidate_sets = []
+        for i in range(len(previous_candidates)):
+            for j in range(i+1, len(previous_candidates)):
+                if previous_candidates[i][:-1] == previous_candidates[j][:-1]:
+                    candidate_sets.append(previous_candidates[i] + (previous_candidates[j][-1],))
 
-        # Now we prune it based on dataset and min_support
-        for itemset in tqdm(candidate_sets):
-            #print(f"Item Set: {itemset}")
+        # print(f"Candidate Sets at level {count}: ",candidate_sets)
+        for itemset in candidate_sets:
+            subsets = list(combinations(itemset, count-1))
+            # Check for Apriori property where all non-empty subsets of a frequent itemset must also be frequent
+            check = self.apriori_property(previous_candidates, subsets)
+            if(check == True):
+                candidate_final_sets.append(itemset)
+        if(len(candidate_final_sets) == 0):
+            return None
+        
+        # Now we calculate the suppport and filter against min_support
+        self.data = self.reduce_transactions(self.data, count)
+        for itemset in tqdm(candidate_final_sets):
             for transaction_id in self.data:
-                transaction_set = set(self.data[transaction_id])
-                if itemset <= transaction_set:  
+                if set(itemset).issubset(self.data[transaction_id]):  
                     candidate_sets_freq[itemset] = candidate_sets_freq.get(itemset, 0) + 1
 
         return  {item: freq for item, freq in candidate_sets_freq.items() if freq/len(self.data) >= self.min_support}
 
-    def generate_itemsets(self, items_freq):
+    def generate_itemsets(self):
         items_set_freq = {}
         candidates = []
-
-        if not items_freq :
-            return "No frequent itemset found"
-
         # Number of items in a set, we start from 1
         count = 1
         while True:
             # If count equals to 1, it is just the items frequency table
             if(count == 1):
-                items_set_freq[count] = items_freq
-                candidates.append(items_freq) 
+                candidate_set_1 = self.item_frequency()
+                if not candidate_set_1 :
+                    print("No frequent itemset found")
+                    return None
+                items_set_freq[count] = candidate_set_1
+                candidates.append(list(candidate_set_1.keys()))
+                #candidates.append([key[0] for key in candidate_set_1.keys()]) 
             else:
                  # Generate the next candidate itemsets based on previous candidate set
                  candidate_itemsets = self.generate_candidate_sets(candidates[-1], count)
                  if not candidate_itemsets:
                      print("No more frequent itemsets are further found")
                      break
-                 candidates.append(candidate_itemsets)
                  items_set_freq[count] = candidate_itemsets
+                 candidates.append(list(candidate_itemsets.keys()))
             count+=1
         
         return items_set_freq
 
     # Run the algorithm
     def run_apriori(self):
-        items_freq = self.item_frequency()
-        itemsets_freq = self.generate_itemsets(items_freq)
+        itemsets_freq = self.generate_itemsets()
         return itemsets_freq
     
     # Generating strong association rules
