@@ -32,14 +32,8 @@ class Improved_Apriori:
         # print(f'L1: {L1}')
         candidate_sets = list(combinations(L1, k))
         """
-        This function generate the k-itemset candidates set from the k-1 frequent itemset
+        This function generate the k-itemset candidates set from the 1 item frequent itemset
         """
-        # candidate_sets = []
-        # for i in range(len(Lk_minus_one)):
-        #     for j in range(i+1, len(Lk_minus_one)):
-        #         if set(Lk_minus_one[i]).intersection(set(Lk_minus_one[j])):
-        #             candidate_sets.append(set(Lk_minus_one[i] + Lk_minus_one[j]))
-        # print(f"Candidate sets formed: {candidate_sets}")
         return candidate_sets
 
     def generate_candidates(self, Lk_minus_one):
@@ -55,7 +49,12 @@ class Improved_Apriori:
                     
         return candidate_sets
 
+    
     def get_item_min_support(self, candidate_set, L1):
+        """
+        This function gets the lowest support item in a given itemset
+
+        """
         min_items = []
         for itemset in candidate_set:
             min_sup = float('inf')
@@ -70,6 +69,10 @@ class Improved_Apriori:
         return min_items
 
     def get_transaction_ids_dict(self, L1):
+        """
+        For this algorithm, instead of searching the entire database, we only have to search the transactions that contain the item with the lowest support
+        
+        """
         transaction_id_dict = {}
         for item in L1:
             transaction_ids = []
@@ -83,7 +86,6 @@ class Improved_Apriori:
         transaction_ids = []
         for min_support_item in min_support_items:
             transaction_ids.append(transaction_id_dict[min_support_item])
-
         return transaction_ids
 
     def apriori(self):
@@ -99,15 +101,19 @@ class Improved_Apriori:
                 candidate_sets = self.generate_L2_candidates(L1_str, k)
             else:
                 # print(list(L[k-2].keys()))
+                # Generate candidates based of k-1 frequent itemsets instead of L1
                 candidate_sets = self.generate_candidates(list(L[k-2].keys()))
                 # print(f"Candidate Sets: {candidate_sets}")
+
+            # Get the lowest support item in an itemset
             min_support_items = self.get_item_min_support(candidate_sets, L1)
             # print(f"Min Support Items: {min_support_items}")
             transaction_ids = self.get_transaction_ids(transaction_ids_dict, min_support_items)
             # print(f'Transaction IDs at K = {k}: {transaction_ids} ')
             counts = {}
 
-            for idx, itemset in tqdm(enumerate(candidate_sets)):
+            # The bottleneck is here, unsure if there is a way to get the count of the itemset fast
+            for idx, itemset in enumerate(tqdm(candidate_sets)):
                 if idx < len(transaction_ids):
                     transactions = transaction_ids[idx]
                     for transaction in transactions:
