@@ -92,6 +92,7 @@ class Improved_Apriori:
         L1_str = [item[0] for item in L1.keys()]
         # nth-frequent itemset
         k = 2
+        # Retrieve the transaction ids once 
         transaction_ids_dict = self.get_transaction_ids_dict(L1_str)
         while len(L[k-2]) > 0:
             if(k==2):
