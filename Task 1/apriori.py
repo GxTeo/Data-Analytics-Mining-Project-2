@@ -38,8 +38,26 @@ class Apriori:
         return True
 
     # Reduce transaction that has less than n items for nth level
-    def reduce_transactions(self, transactions, count):
-        return {transaction_id: transaction for transaction_id, transaction in transactions.items() if len(transaction) >= count}
+    def transaction_reduction(self, frequent_items):
+        """
+        This function reduces the number of transactions by removing 
+        the transactions that do not contain any frequent items.
+        """
+        # Dictionary to store the reduced transactions
+        reduced_transactions = {}
+        print(f'Frequent Items {frequent_items}')
+        for transaction_id, items in self.data.items():
+            # Convert items to a set for faster intersection operation
+            items_set = set(items)
+            
+            # Check if the transaction contains any frequent item
+            for item in items_set:
+                for candidate_set in frequent_items:
+                    if(item in candidate_set):
+                        # If it does, add it to the reduced transactions
+                        reduced_transactions[transaction_id] = items
+                        break
+        return reduced_transactions
 
     # Generate candidate sets which is the pairs/groups of item based on previous candidates set
     def generate_candidate_sets(self, previous_candidates, count):
@@ -65,7 +83,6 @@ class Apriori:
             return None
         
         # Now we calculate the suppport and filter against min_support
-        self.data = self.reduce_transactions(self.data, count)
         for itemset in tqdm(candidate_final_sets):
             for transaction_id in self.data:
                 if set(itemset).issubset(self.data[transaction_id]):  
@@ -96,8 +113,9 @@ class Apriori:
                      break
                  items_set_freq[count] = candidate_itemsets
                  candidates.append(list(candidate_itemsets.keys()))
+                 #self.data = self.transaction_reduction(list(candidate_itemsets.keys()))
             count+=1
-        
+            
         return items_set_freq
 
     # Run the algorithm
