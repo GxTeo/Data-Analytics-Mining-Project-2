@@ -32,11 +32,18 @@ class Improved_Apriori:
         # print(f'L1: {L1}')
         candidate_sets = list(combinations(L1, k))
         """
-        This function generate the k-itemset candidates set from the 1 item frequent itemset
+        This function generate the 2-itemset candidates set from the 1 item frequent itemset
         """
         return candidate_sets
 
     def generate_candidates(self, Lk_minus_one):
+
+        """
+        This function generate the k-item candidates set from k-1 frequent itemset. This upholds Apriori property.
+        
+        Explained in lecture
+        
+        """
         candidate_sets = []
         len_Lk_minus_one = len(Lk_minus_one)
         
@@ -88,11 +95,34 @@ class Improved_Apriori:
             transaction_ids.append(transaction_id_dict[min_support_item])
         return transaction_ids
 
+    # Measure of how likely is Itemset Y purchased when Itemset X is purchased
+    def get_confidence(self, frequent_itemset):
+        confidences = {}
+        for k in range(0, len(frequent_itemset)):
+            for itemset in frequent_itemset[k]:
+                num_itemset = frequent_itemset[k][itemset]
+
+                # For each subset 
+                for i in range(1, len(itemset)):
+                    for subset in combinations(itemset, i):
+                        num_subset = frequent_itemset[len(subset)-1][subset]
+
+                        confidence = num_itemset/num_subset if num_subset > 0 else 0
+
+                        confidences[(subset, tuple(item for item in itemset if item not in subset))] = confidence
+                        
+
+
+        return {rules: confidence for rules, confidence in confidences.items() if confidence >= self.min_confidence}
+
+
+
+
     def apriori(self):
         L1 = self.generate_L1_itemsets()
         L = [L1]
         L1_str = [item[0] for item in L1.keys()]
-        # nth-frequent itemset
+        # Nth-frequent itemset
         k = 2
         # Retrieve the transaction ids once 
         transaction_ids_dict = self.get_transaction_ids_dict(L1_str)
@@ -126,7 +156,7 @@ class Improved_Apriori:
             L.append(Lk)
             k += 1
 
-        return L
+        return L[:-1]
 
 
 
