@@ -1,6 +1,7 @@
 from itertools import combinations
 from tqdm import tqdm
 import time 
+import collections
 # Implementation of the paper AN IMPROVED APRIORI ALGORITHM FOR ASSOCIATION RULES with modifications
 class Improved_Apriori:
     def __init__(self, data, min_support, min_confidence, verbose=0):
@@ -11,10 +12,11 @@ class Improved_Apriori:
         self.verbose = verbose
 
     # Generate the frequent 1-itemset
-    def generate_L1_itemsets(self):
+    def generate_L1_transaction_dict(self):
         
         # This is equivalent to the item frequency which >= min_support 
         L1 = {}
+        transaction_id_dict = collections.defaultdict(list)
         """
         Assumptions on dataset is such that
 
@@ -22,15 +24,21 @@ class Improved_Apriori:
         
         where data is a dictionary. Key is transaction id and items is a list
         """
+        
         for transaction_id in self.data:
             for item in self.data[transaction_id]:
                 item_tuple = (item,)
                 L1[item_tuple] = L1.get(item_tuple, 0) + 1
+                transaction_id_dict[item_tuple].append(transaction_id)
         # Based on the minimum support value, we filter to form the frequent itemset
         L1 = {item: freq for item, freq in L1.items() if freq/len(self.data) >= self.min_support}
         L1 = {k: L1[k] for k in sorted(L1)}
 
-        return L1
+        # Filter transaction_id_dict
+        transaction_id_dict = {item: transaction_ids for item, transaction_ids in transaction_id_dict.items() if item in L1}
+
+        return L1, transaction_id_dict
+    
     def generate_L2_candidates(self, L1, k):
         """
         This function generate the 2-itemset candidates set from the 1 item frequent itemset
@@ -54,14 +62,12 @@ class Improved_Apriori:
         for frequent_itemset in Lk_minus_one:
             for item in frequent_itemset:
                 item_counts[item] = item_counts.get(item, 0)+1
-
-  
      
         len_Lk_minus_one = len(Lk_minus_one)
         # For each itemset in Lk_minus_one, join it with every other itemset
         for i in range(0, len_Lk_minus_one):
             for j in range(i+1, len_Lk_minus_one):
-                # Only combine sets if their first k-2 items are equal
+                # Only combine sets if their first item from k-1 itemset are equal
                 if Lk_minus_one[i][:-1] == Lk_minus_one[j][:-1]:
                     candidate = tuple(sorted(Lk_minus_one[i] + Lk_minus_one[j][-1:]))
                     candidate_sets.append(candidate)
@@ -74,7 +80,6 @@ class Improved_Apriori:
     
             for i in range(len(candidate) - 2):
                 removed = candidate[:i] + candidate[i + 1 :]
-                
                 if removed not in Lk_minus_one:
                     break
             else:
@@ -82,74 +87,36 @@ class Improved_Apriori:
 
         return pruned_candidate_sets
     
-    def get_item_min_support(self, candidate_set, L1):
-        """
-        This function gets the lowest support item in a given itemset
-
-        """
-        min_items = []
-        for itemset in candidate_set:
-            min_sup = float('inf')
-            min_item = None
-            for item in itemset:
-                sup = L1[(item,)]
-
-                if(sup < min_sup):
-                    min_sup = sup
-                    min_item = item
-            min_items.append(min_item)
-        return min_items
-
-    def get_transaction_ids_dict(self, L1):
-        """
-        For this algorithm, instead of searching the entire database, we only have to search the transactions that contain the item with the lowest support
+    def heuristic_approach(self, candidate_set, L1, transaction_ids_dict):
+        # Sort the items in the candidate set based on their frequency in L1
+       
+        sorted_candidate = sorted(candidate_set, key=lambda item: L1[(item,)], reverse=True)
+        min_support_item = sorted_candidate.pop()
+        transaction_ids = set(transaction_ids_dict[(min_support_item,)])
+        support = L1[(min_support_item,)]/len(self.data)
+        if(support < self.min_support):
+            return False, None
         
-        """
-        transaction_id_dict = {}
-        for item in L1:
-            transaction_ids = []
-            for transaction_id in self.data:
-                if(item in self.data[transaction_id]):
-                    transaction_ids.append(transaction_id)
-            transaction_id_dict[item] = transaction_ids
-        return transaction_id_dict
+        while(sorted_candidate):
+            next_min_support_item = sorted_candidate.pop()
+            transaction_ids = transaction_ids.intersection(set(transaction_ids_dict[(next_min_support_item,)]))
+            support = L1[(next_min_support_item,)]/len(self.data)
+            if(support < self.min_support):
+                return False, None
 
-    def get_transaction_ids(self, transaction_id_dict, min_support_items):
-        transaction_ids = []
-        for min_support_item in min_support_items:
-            transaction_ids.append(transaction_id_dict[min_support_item])
-        return transaction_ids
-    
-
-    # # Measure of how likely is Itemset Y purchased when Itemset X is purchased
-    # def get_confidence(self, frequent_itemset):
-    #     confidences = {}
-    #     for k in range(0, len(frequent_itemset)):
-    #         for itemset in frequent_itemset[k+1]:
-    #             num_itemset = frequent_itemset[k+1][itemset]
-
-    #             # For each subset 
-    #             for i in range(1, len(itemset)):
-    #                 for subset in combinations(itemset, i):
-    #                     num_subset = frequent_itemset[len(subset)][subset]
-
-    #                     confidence = num_itemset/num_subset if num_subset > 0 else 0
-
-    #                     confidences[(subset, tuple(item for item in itemset if item not in subset))] = confidence
-                        
-    #     return {rules: confidence for rules, confidence in confidences.items() if confidence >= self.min_confidence}
-
-
+        return True, transaction_ids
 
 
     def apriori(self):
-        L1 = self.generate_L1_itemsets()
+        # Retrieve the transaction ids once 
+        L1, transaction_ids_dict = self.generate_L1_transaction_dict()
+        print(f"Found {len(L1)} frequent itemsets from 1th item candidate sets")
+        #print(f'Transaction ID Dictionary: {transaction_ids_dict}')
         L = [L1]
         L1_str = [item[0] for item in L1.keys()]
-        # Nth-frequent itemset
+        # Kth-frequent itemset
         k = 2
-        # Retrieve the transaction ids once 
-        transaction_ids_dict = self.get_transaction_ids_dict(L1_str)
+        
         while len(L[k-2]) > 0:
             start_time = time.time()
             if(k==2):
@@ -158,28 +125,28 @@ class Improved_Apriori:
                 #Generate candidates based of k-1 frequent itemsets instead of L1
                 not_pruned_candidate_sets = self.generate_candidates(list(L[k-2].keys()),k)
                 candidate_sets = self.prune_candidates(list(L[k-2].keys()),not_pruned_candidate_sets)
-            
             if(self.verbose > 0):
                 print(f"Found {len(candidate_sets)} candidates for {k}th item candidate sets")
                 #print(f'Candidate Sets for {k}th itemset : {candidate_sets}')
             end_time = time.time()
-            # Get the lowest support item in an itemset
-            min_support_items = self.get_item_min_support(candidate_sets, L1)
-            # print(f"Min Support Items: {min_support_items}")
 
-            transaction_ids = self.get_transaction_ids(transaction_ids_dict, min_support_items)
-            # print(f'Transaction IDs at K = {k}: {transaction_ids} ')
             counts = {}
             if(self.verbose > 0):
                 print(f"Time taken to find {k}th item candidate sets: {end_time-start_time}")
 
+            for candidate in tqdm(candidate_sets):
+                above_min, ids = self.heuristic_approach(candidate,L1, transaction_ids_dict)
+                if(above_min):
+                    counts[candidate] = len(ids)
+
+
             # The bottleneck is here, unsure if there is a way to get the count of the itemset fast
-            for idx, itemset in enumerate(tqdm(candidate_sets)):
-                if idx < len(transaction_ids):
-                    transactions = transaction_ids[idx]
-                    for transaction in transactions:
-                        if(set(itemset).issubset(set(self.data[transaction]))):
-                            counts[itemset] = counts.get(itemset, 0) + 1
+            # for idx, itemset in enumerate(tqdm(candidate_sets)):
+            #     if idx < len(transaction_ids):
+            #         transactions = transaction_ids[idx]
+            #         for transaction in transactions:
+            #             if(set(itemset).issubset(set(self.data[transaction]))):
+            #                 counts[itemset] = counts.get(itemset, 0) + 1
 
 
             # print(f"Counts at {k}: {counts}")
