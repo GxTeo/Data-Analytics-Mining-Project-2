@@ -88,7 +88,11 @@ class Improved_Apriori:
         return pruned_candidate_sets
     
     def heuristic_approach(self, candidate_set, L1, transaction_ids_dict):
-        # Sort the items in the candidate set based on their frequency in L1
+
+        """
+        This approach greatly reduces the amount of transactions required to compute the support count
+        
+        """
        
         sorted_candidate = sorted(candidate_set, key=lambda item: L1[(item,)], reverse=True)
         min_support_item = sorted_candidate.pop()
@@ -99,6 +103,7 @@ class Improved_Apriori:
         
         while(sorted_candidate):
             next_min_support_item = sorted_candidate.pop()
+            # We are only interested in the transactions where all the items in the candidate sets are present
             transaction_ids = transaction_ids.intersection(set(transaction_ids_dict[(next_min_support_item,)]))
             support = L1[(next_min_support_item,)]/len(self.data)
             if(support < self.min_support):
