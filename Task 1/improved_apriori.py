@@ -10,6 +10,7 @@ class Improved_Apriori:
         self.min_support = min_support
         self.min_confidence = min_confidence
         self.verbose = verbose
+ 
 
     # Generate the frequent 1-itemset
     def generate_L1_transaction_dict(self):
@@ -26,11 +27,15 @@ class Improved_Apriori:
         """
         
         for transaction_id in self.data:
-            for item in self.data[transaction_id]:
+            # In a transaction set, an item only appears once in a itemsets
+            transaction_set = set(self.data[transaction_id])
+            for item in transaction_set:
                 item_tuple = (item,)
                 L1[item_tuple] = L1.get(item_tuple, 0) + 1
                 transaction_id_dict[item_tuple].append(transaction_id)
         # Based on the minimum support value, we filter to form the frequent itemset
+        if(self.verbose > 0):
+            print(f"Found {len(L1)} candidate itemsets from 1st Level")
         L1 = {item: freq for item, freq in L1.items() if freq/len(self.data) >= self.min_support}
         L1 = {k: L1[k] for k in sorted(L1)}
 
@@ -75,6 +80,10 @@ class Improved_Apriori:
         return candidate_sets
     
     def prune_candidates(self, Lk_minus_one, candidate_sets):
+        """
+        This functions upholds Apriori Property 
+        
+        """
         pruned_candidate_sets = []
         for candidate in candidate_sets:
     
@@ -115,7 +124,8 @@ class Improved_Apriori:
     def apriori(self):
         # Retrieve the transaction ids once 
         L1, transaction_ids_dict = self.generate_L1_transaction_dict()
-        print(f"Found {len(L1)} frequent itemsets from 1th item candidate sets")
+        if(self.verbose > 0):
+            print(f"Found {len(L1)} frequent itemsets from 1th item candidate sets")
         #print(f'Transaction ID Dictionary: {transaction_ids_dict}')
         L = [L1]
         L1_str = [item[0] for item in L1.keys()]
@@ -136,6 +146,7 @@ class Improved_Apriori:
             end_time = time.time()
 
             counts = {}
+
             if(self.verbose > 0):
                 print(f"Time taken to find {k}th item candidate sets: {end_time-start_time}")
 
@@ -155,7 +166,9 @@ class Improved_Apriori:
 
 
             # print(f"Counts at {k}: {counts}")
+           
             Lk = {itemset: count for itemset, count in counts.items() if count/len(self.data) >= self.min_support}
+            #print(Lk)
             if(self.verbose > 0):
                 print(f"Found {len(Lk)} frequent itemsets from {k}th item candidate sets")
                 #print(f'Frequent Itemsets for {k}th itemset : {Lk}')
