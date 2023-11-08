@@ -4,7 +4,7 @@ import time
 import collections
 # Implementation of the paper AN IMPROVED APRIORI ALGORITHM FOR ASSOCIATION RULES with modifications
 class Improved_Apriori:
-    def __init__(self, data, min_support, min_confidence, verbose=0):
+    def __init__(self, data, min_support, min_confidence=1, verbose=0):
         self.data = data
         # Support is the the ratio of the number of transactions that contain an itemset.
         self.min_support = min_support
@@ -99,8 +99,8 @@ class Improved_Apriori:
     def heuristic_approach(self, candidate_set, L1, transaction_ids_dict):
 
         """
-        This approach greatly reduces the amount of transactions required to compute the support count
-        
+        This approach greatly reduces the amount of transactions required to compute the support count.
+        Heuristic approach from research papers to improve computational time for apriori
         """
        
         sorted_candidate = sorted(candidate_set, key=lambda item: L1[(item,)], reverse=True)
@@ -119,7 +119,7 @@ class Improved_Apriori:
                 return False, None
 
         return True, transaction_ids
-
+    
 
     def apriori(self):
         # Retrieve the transaction ids once 
