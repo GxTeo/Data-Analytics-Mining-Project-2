@@ -96,27 +96,21 @@ class Improved_Apriori:
 
         return pruned_candidate_sets
     
-    def heuristic_approach(self, candidate_set, L1, transaction_ids_dict):
+    def determine_frequent_itemset(self, candidate_set, L1, transaction_ids_dict):
 
         """
         This approach greatly reduces the amount of transactions required to compute the support count.
-        Heuristic approach from research papers to improve computational time for apriori
+        Mainly, we just need to get the transaction IDs where all the items in a candidate is presents
         """
-       
-        sorted_candidate = sorted(candidate_set, key=lambda item: L1[(item,)], reverse=True)
-        min_support_item = sorted_candidate.pop()
-        transaction_ids = set(transaction_ids_dict[(min_support_item,)])
-        support = L1[(min_support_item,)]/len(self.data)
-        if(support < self.min_support):
+        transaction_ids = set(transaction_ids_dict[((candidate_set[0],))])
+        for i in range(1,len(candidate_set)):
+            # We are only interested in the transactions where all the items in the candidate set are present
+            # This reduces the time taken to compute the count of the itemset
+            # Overlap strategy 
+            transaction_ids = transaction_ids.intersection(set(transaction_ids_dict[((candidate_set[i],))]))
+
+        if(len(transaction_ids)/len(self.data) < self.min_support):
             return False, None
-        
-        while(sorted_candidate):
-            next_min_support_item = sorted_candidate.pop()
-            # We are only interested in the transactions where all the items in the candidate sets are present
-            transaction_ids = transaction_ids.intersection(set(transaction_ids_dict[(next_min_support_item,)]))
-            support = L1[(next_min_support_item,)]/len(self.data)
-            if(support < self.min_support):
-                return False, None
 
         return True, transaction_ids
     
@@ -151,7 +145,7 @@ class Improved_Apriori:
                 print(f"Time taken to find {k}th item candidate sets: {end_time-start_time}")
 
             for candidate in tqdm(candidate_sets):
-                above_min, ids = self.heuristic_approach(candidate,L1, transaction_ids_dict)
+                above_min, ids = self.determine_frequent_itemset(candidate,L1, transaction_ids_dict)
                 if(above_min):
                     counts[candidate] = len(ids)
 
@@ -166,7 +160,7 @@ class Improved_Apriori:
 
 
             # print(f"Counts at {k}: {counts}")
-           
+
             Lk = {itemset: count for itemset, count in counts.items() if count/len(self.data) >= self.min_support}
             #print(Lk)
             if(self.verbose > 0):
