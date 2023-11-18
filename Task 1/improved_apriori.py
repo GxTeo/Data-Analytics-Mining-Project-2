@@ -96,7 +96,7 @@ class Improved_Apriori:
 
         return pruned_candidate_sets
     
-    def determine_frequent_itemset(self, candidate_set, L1, transaction_ids_dict):
+    def overlap_strategy(self, candidate_set, L1, transaction_ids_dict):
 
         """
         This approach greatly reduces the amount of transactions required to compute the support count.
@@ -145,7 +145,7 @@ class Improved_Apriori:
                 print(f"Time taken to find {k}th item candidate sets: {end_time-start_time}")
 
             for candidate in tqdm(candidate_sets):
-                above_min, ids = self.determine_frequent_itemset(candidate,L1, transaction_ids_dict)
+                above_min, ids = self.overlap_strategy(candidate,L1, transaction_ids_dict)
                 if(above_min):
                     counts[candidate] = len(ids)
 
