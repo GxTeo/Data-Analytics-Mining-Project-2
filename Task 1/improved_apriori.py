@@ -116,16 +116,16 @@ class Improved_Apriori:
     
 
     def apriori(self):
-        # Retrieve the transaction ids once 
+        # Retrieve the transaction ids once on 1-frequent itemset
         L1, transaction_ids_dict = self.generate_L1_transaction_dict()
         if(self.verbose > 0):
             print(f"Found {len(L1)} frequent itemsets from 1th item candidate sets")
-        #print(f'Transaction ID Dictionary: {transaction_ids_dict}')
+        # print(f'Transaction ID Dictionary: {transaction_ids_dict}')
         L = [L1]
         L1_str = [item[0] for item in L1.keys()]
-        # Kth-frequent itemset
         k = 2
         
+        # For K>=2 itemset
         while len(L[k-2]) > 0:
             start_time = time.time()
             if(k==2):
@@ -133,14 +133,14 @@ class Improved_Apriori:
             else:
                 #Generate candidates based of k-1 frequent itemsets instead of L1
                 not_pruned_candidate_sets = self.generate_candidates(list(L[k-2].keys()),k)
+                # Prune candidates that does not follow Apriori Property
                 candidate_sets = self.prune_candidates(list(L[k-2].keys()),not_pruned_candidate_sets)
             if(self.verbose > 0):
                 print(f"Found {len(candidate_sets)} candidates for {k}th item candidate sets")
-                #print(f'Candidate Sets for {k}th itemset : {candidate_sets}')
+                print(f'Candidate Sets for {k}th itemset : {candidate_sets}')
             end_time = time.time()
 
             counts = {}
-
             if(self.verbose > 0):
                 print(f"Time taken to find {k}th item candidate sets: {end_time-start_time}")
 
@@ -162,14 +162,11 @@ class Improved_Apriori:
             # print(f"Counts at {k}: {counts}")
 
             Lk = {itemset: count for itemset, count in counts.items() if count/len(self.data) >= self.min_support}
-            #print(Lk)
             if(self.verbose > 0):
                 print(f"Found {len(Lk)} frequent itemsets from {k}th item candidate sets")
-                #print(f'Frequent Itemsets for {k}th itemset : {Lk}')
+                print(f'Frequent Itemsets for {k}th itemset : {Lk}')
             L.append(Lk)
             k += 1
-        
-
         
         frequent_itemset_dict = {}
         for level in range(len(L[:-1])): 
