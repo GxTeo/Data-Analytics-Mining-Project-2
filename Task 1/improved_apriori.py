@@ -136,7 +136,7 @@ class Improved_Apriori:
                 # Prune candidates that does not follow Apriori Property
                 candidate_sets = self.prune_candidates(list(L[k-2].keys()),not_pruned_candidate_sets)
             if(self.verbose > 0):
-                print(f"Found {len(candidate_sets)} candidates for {k}th item candidate sets")
+                print(f"Found {len(candidate_sets)} candidates for {k}th itemsets")
                 print(f'Candidate Sets for {k}th itemset : {candidate_sets}')
             end_time = time.time()
 
@@ -163,7 +163,7 @@ class Improved_Apriori:
 
             Lk = {itemset: count for itemset, count in counts.items() if count/len(self.data) >= self.min_support}
             if(self.verbose > 0):
-                print(f"Found {len(Lk)} frequent itemsets from {k}th item candidate sets")
+                print(f"Found {len(Lk)} frequent itemsets from candidate {k}th-itemsets")
                 print(f'Frequent Itemsets for {k}th itemset : {Lk}')
             L.append(Lk)
             k += 1
